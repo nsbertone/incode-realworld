@@ -1,0 +1,8 @@
+# Default gitleaks rules, plus one narrow allowlist: frontend unit tests use
+# fake, hard-coded JWTs as fixtures.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Fake tokens in frontend unit test fixtures"
+paths = ['''frontend/src/.*\.spec\.ts$''']

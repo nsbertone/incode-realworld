@@ -1,0 +1,95 @@
+# Terraform checks on every infra change; `plan` on pull requests.
+# `apply` stays a manual, reviewed step (see README "Known gaps").
+#
+# Plan uses a read-only role (gha-plan: ReadOnlyAccess + state lock file).
+# Only the AWS stack is planned here: the ArgoCD stack talks to the EKS API,
+# which is not reachable from GitHub-hosted runners (private endpoint,
+# public access limited to admin IPs). Planning it from CI would need a
+# self-hosted runner inside the VPC.
+#
+# Repository settings used by the plan job:
+#   vars.AWS_REGION, vars.AWS_PLAN_ROLE_ARN (output ci_role_arns.plan),
+#   vars.TF_STATE_BUCKET, secrets.DEV_AWS_TFVARS (contents of terraform.tfvars)
+name: Terraform
+
+on:
+  pull_request:
+    paths: ["infra/**", ".github/workflows/terraform.yml"]
+  push:
+    branches: [main]
+    paths: ["infra/**", ".github/workflows/terraform.yml"]
+
+permissions:
+  contents: read
+
+env:
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+
+jobs:
+  validate:
+    name: terraform / fmt + validate (${{ matrix.root }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        root: [infra/global, infra/envs/dev/aws, infra/envs/dev/argocd]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: "1.16.1"
+          terraform_wrapper: false
+      - name: fmt
+        run: terraform fmt -check -recursive -diff infra
+      - name: validate
+        working-directory: ${{ matrix.root }}
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+  plan:
+    name: terraform / plan (dev/aws)
+    needs: validate
+    if: github.event_name == 'pull_request' && vars.AWS_PLAN_ROLE_ARN != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: infra/envs/dev/aws
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: "1.16.1"
+          terraform_wrapper: false
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: tfvars
+        env:
+          TFVARS: ${{ secrets.DEV_AWS_TFVARS }}
+        run: printf '%s\n' "$TFVARS" > terraform.tfvars
+      - name: init
+        run: >
+          terraform init
+          -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}"
+          -backend-config="region=${{ vars.AWS_REGION }}"
+      - name: plan
+        run: |
+          terraform plan -lock-timeout=5m -no-color -out=tfplan | tee plan.txt
+          {
+            echo '### terraform plan: dev/aws'
+            echo '```'
+            grep -E '^(Plan:|No changes|  # )' plan.txt | head -100
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

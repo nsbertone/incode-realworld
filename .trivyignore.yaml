@@ -1,0 +1,38 @@
+# Accepted IaC findings. Every entry is a conscious decision, scoped to the
+# files where it applies; anything new fails the pipeline.
+misconfigurations:
+  - id: AWS-0132
+    paths:
+      - infra/global/main.tf
+      - infra/modules/edge/alb.tf
+      - infra/modules/observability/main.tf
+      - infra/modules/security/main.tf
+    statement: >
+      Buckets are encrypted (SSE-KMS with the AWS managed key, SSE-S3 for ALB
+      logs, which ALB requires). A customer managed key adds key-policy
+      management and cost without changing who can read the data here.
+  - id: AWS-0136
+    paths: [infra/modules/observability/main.tf]
+    statement: Alerts topic carries alert text only; AWS managed encryption is enough.
+  - id: AWS-0015
+    paths: [infra/modules/security/main.tf]
+    statement: >
+      CloudTrail bucket is SSE-KMS (AWS managed key), versioned, not public.
+      Production would use a CMK in a separate log-archive account.
+  - id: AWS-0053
+    paths: [infra/modules/edge/alb.tf]
+    statement: >
+      The ALB must have a public address for CloudFront to reach it. Its
+      security group admits only the CloudFront origin-facing prefix list and
+      every listener rule requires the secret X-Origin-Verify header.
+  - id: AWS-0054
+    paths: [infra/modules/edge/alb.tf]
+    statement: >
+      Without a custom domain there is no certificate for the ALB, so
+      CloudFront -> ALB is HTTP (viewer -> CloudFront is always HTTPS).
+      Setting domain_name switches the listener to HTTPS (TLS 1.3). Known gap.
+  - id: AWS-0104
+    statement: >
+      EKS node security group egress (terraform-aws-modules/eks). Nodes reach
+      ECR, AWS APIs and package mirrors through NAT; pod egress is restricted
+      with Kubernetes NetworkPolicies instead.
