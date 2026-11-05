@@ -1,0 +1,3 @@
+# cp backend.hcl.example backend.hcl, then: terraform init -backend-config=../../backend.hcl
+bucket = "realworld-tfstate-780601577639"
+region = "eu-central-1"

@@ -1,0 +1,22 @@
+account_id  = "780601577639"
+region      = "eu-central-1"
+dr_region   = "eu-west-1"
+environment = "dev"
+vpc_cidr    = "10.60.0.0/16"
+
+# curl -s https://checkip.amazonaws.com
+admin_cidrs = ["203.0.113.10/32"]
+
+github_repo              = "nsbertone/incode-realworld"
+github_oidc_provider_arn = "arn:aws:iam::780601577639:oidc-provider/token.actions.githubusercontent.com"
+tfstate_bucket           = "realworld-tfstate-780601577639"
+alert_email              = "you@example.com"
+
+# Cost/HA knobs for the lab
+single_nat_gateway = true
+db_multi_az        = true
+lab_mode           = true
+
+# Optional custom domain (end-to-end TLS):
+# domain_name    = "app.example.com"
+# hosted_zone_id = "Z0123456789ABCDEF"

@@ -1,0 +1,5 @@
+account_id         = "780601577639"
+region             = "eu-central-1"
+project            = "realworld"
+monthly_budget_usd = 150
+budget_alert_email = "you@example.com"
