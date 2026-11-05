@@ -337,6 +337,7 @@ backups + Data Lifecycle Manager for EBS), single region.
 | Loki single binary, Alloy without Kubernetes events or node journald | Enough for one small cluster; scalable mode and an events source next. |
 | No SLOs or burn-rate alerts | Prometheus has the data (request latency, errors); SLOs per endpoint would be next. |
 | `terraform apply` is manual | Plan runs on PRs (`dev/aws`). The ArgoCD stack needs the private EKS API, so applying it from CI needs a self-hosted runner in the VPC (e.g. Actions Runner Controller). |
+| First deploy depends on the first CI run | Until CI pushes an image, the app Application retries with a tag that does not exist. A bootstrap that enables the app only after the first image exists would remove the manual step. |
 | Only `dev` exists | Promotion would be a PR that copies the image tag from `envs/dev` to `envs/staging`/`envs/prod`. |
 | GitOps state in the app repo; CI commits to `main` | Fine for one team; larger setups split a config repo and protect `main` with a bot exception. |
 | ArgoCD, Grafana via `kubectl port-forward` only | No SSO set up; not exposed publicly on purpose. |
@@ -344,6 +345,25 @@ backups + Data Lifecycle Manager for EBS), single region.
 | Load test runs in CI on shared runners | Good for relative regressions, noisy for absolute numbers; a nightly run against dev would add realistic numbers. |
 | Operator uses an IAM user access key | Lab account. In a company: IAM Identity Center with short-lived credentials. |
 | GuardDuty runtime monitoring off | Its agent-managed VPC endpoint blocks VPC deletion on `destroy`; on in a long-lived account. |
+
+### What the first real deploy found
+
+Everything above passed locally and in CI before the first deploy to AWS.
+The first end-to-end run still found five problems; each fix is a commit:
+
+| Problem | Cause | Fix |
+|---|---|---|
+| `terraform apply` denied (S3, EC2, Budgets, Backup) | Organization SCP: only `us-east-1`, no `budgets:*` / `backup:*` | Region switch, features behind flags, DLM fallback (see above) |
+| Node group could not launch instances | SCP allows only t2/t3/t3a up to `.medium` (found with `sts decode-authorization-message`) | `t3.medium` / `t3a.medium`, 4 nodes |
+| GitHub Actions could not assume the AWS role | GitHub sends immutable OIDC subjects (`repo:owner@id/repo@id`) | Configurable `github_sub_prefix` in the role trust |
+| Migration: `password authentication failed` | Upstream settings did not percent-decode credentials in `DATABASE_URL`; the RDS-generated password has `/ : @` | `unquote()`; CI database now uses such a password, so the API tests cover it |
+| Backend pods never created on the first sync | Backend HPA (wave 0) pointed at a Deployment created in wave 1; ArgoCD marked it Degraded and stopped the sync | HPAs moved to wave 2 |
+
+Two operational notes from the same run: a sync that started before the
+first image existed (tag `bootstrap`) kept retrying the old revision and had
+to be terminated (`argocd app terminate-op`); and ECR image pulls only work
+once CI has pushed, so on a brand-new environment the app becomes healthy
+after the first pipeline run, not after `terraform apply`.
 
 ## Alternatives considered
 
