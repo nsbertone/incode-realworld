@@ -2,14 +2,13 @@
 # to main; ArgoCD picks the change up and rolls it out.
 backend:
   image:
-    tag: "bootstrap"
+    tag: "94ab905df69e3311a61341dd31b388da58ca6d8f"
   replicas: 2
   env:
     DEBUG: "false"
-    ALLOWED_HOSTS: "*"     # behind CloudFront + ALB header check; tighten to the app host
+    ALLOWED_HOSTS: "*" # behind CloudFront + ALB header check; tighten to the app host
     DJANGO_LOG_FORMAT: json
-
 frontend:
   image:
-    tag: "bootstrap"
+    tag: "94ab905df69e3311a61341dd31b388da58ca6d8f"
   replicas: 2
