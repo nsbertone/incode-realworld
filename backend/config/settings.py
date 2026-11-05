@@ -10,7 +10,7 @@ import sys
 from datetime import timedelta
 from os import getenv
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -103,8 +103,10 @@ elif DATABASE_URL:
         "default": {
             "ENGINE": "django.db.backends.postgresql",
             "NAME": PARSED_DATABASE_URL.path[1:],
-            "USER": PARSED_DATABASE_URL.username,
-            "PASSWORD": PARSED_DATABASE_URL.password,
+            # Credentials in a URL are percent-encoded (generated RDS passwords
+            # contain characters like / : @ that must be escaped): decode them.
+            "USER": unquote(PARSED_DATABASE_URL.username or ""),
+            "PASSWORD": unquote(PARSED_DATABASE_URL.password or ""),
             "HOST": PARSED_DATABASE_URL.hostname,
             "PORT": PARSED_DATABASE_URL.port,
             "OPTIONS": DATABASE_OPTIONS,

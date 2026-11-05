@@ -20,14 +20,16 @@ stack_up() {
 
   docker network create "$NET" >/dev/null
   docker run -d --name "rw-db-$$" --network "$NET" \
-    -e POSTGRES_PASSWORD=ci -e POSTGRES_DB=conduit "$PG_IMAGE" >/dev/null
+    -e "POSTGRES_PASSWORD=c/i:p@ss%w+rd" -e POSTGRES_DB=conduit "$PG_IMAGE" >/dev/null
   for _ in $(seq 1 30); do
     docker exec "rw-db-$$" pg_isready -U postgres >/dev/null 2>&1 && break
     sleep 1
   done
 
   local env=(
-    -e "DATABASE_URL=postgresql://postgres:ci@rw-db-$$:5432/conduit?sslmode=disable"
+    # Password with URL-special characters, percent-encoded like External
+    # Secrets does for the RDS-generated password (regression test).
+    -e "DATABASE_URL=postgresql://postgres:c%2Fi%3Ap%40ss%25w%2Brd@rw-db-$$:5432/conduit?sslmode=disable"
     -e "DJANGO_SECRET_KEY=ci-only-not-a-real-secret-0123456789abcdef"
     -e "ALLOWED_HOSTS=*"
     -e "DJANGO_LOG_FORMAT=json"
