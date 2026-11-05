@@ -94,6 +94,8 @@ resource "aws_iam_openid_connect_provider" "github" {
 
 # ---- Cost guard rail ---------------------------------------------------------
 resource "aws_budgets_budget" "monthly" {
+  count = var.enable_budget ? 1 : 0
+
   name         = "${var.project}-monthly"
   budget_type  = "COST"
   limit_amount = tostring(var.monthly_budget_usd)

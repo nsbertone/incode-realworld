@@ -1,5 +1,5 @@
 account_id      = "780601577639"
-region          = "eu-central-1"
+region          = "us-east-1"
 tfstate_bucket  = "realworld-tfstate-780601577639"
 environment     = "dev"
 repo_url        = "https://github.com/nsbertone/incode-realworld.git"

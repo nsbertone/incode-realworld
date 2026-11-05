@@ -5,13 +5,23 @@ variable "account_id" {
 
 variable "region" {
   type    = string
-  default = "eu-central-1"
+  default = "us-east-1"
 }
 
 variable "dr_region" {
-  description = "Region for cross-region backup copies."
+  description = "Region for cross-region backup copies (AWS Backup). Same as region when that is not allowed."
   type        = string
-  default     = "eu-west-1"
+  default     = "us-east-1"
+}
+
+variable "enable_aws_backup" {
+  description = <<-EOT
+    true: AWS Backup plan (RDS + EBS by tag, vault lock, cross-region copy).
+    false: fallback for accounts where an SCP denies backup:* (the take-home
+    account): RDS automated backups + Data Lifecycle Manager EBS snapshots.
+  EOT
+  type        = bool
+  default     = true
 }
 
 variable "project" {

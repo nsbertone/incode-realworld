@@ -1,6 +1,6 @@
 account_id  = "780601577639"
-region      = "eu-central-1"
-dr_region   = "eu-west-1"
+region      = "us-east-1" # the org SCP allows only us-east-1
+dr_region   = "us-east-1" # no second region allowed -> no cross-region copy
 environment = "dev"
 vpc_cidr    = "10.60.0.0/16"
 
@@ -16,6 +16,7 @@ alert_email              = "you@example.com"
 single_nat_gateway = true
 db_multi_az        = true
 lab_mode           = true
+enable_aws_backup  = false # backup:* denied by the org SCP -> RDS backups + DLM
 
 # Optional custom domain (end-to-end TLS):
 # domain_name    = "app.example.com"

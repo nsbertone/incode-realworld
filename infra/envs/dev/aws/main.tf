@@ -78,6 +78,7 @@ resource "aws_vpc_security_group_ingress_rule" "nodes_from_alb" {
 
 # ---- Backups ----------------------------------------------------------------
 module "backup" {
+  count  = var.enable_aws_backup ? 1 : 0
   source = "../../../modules/backup"
   providers = {
     aws    = aws
@@ -87,6 +88,17 @@ module "backup" {
   name                = local.name
   retention_days      = var.lab_mode ? 7 : 35
   vault_lock_min_days = var.lab_mode ? null : 7
+}
+
+# Fallback when AWS Backup is not allowed: daily EBS snapshots (Prometheus,
+# Grafana volumes) via Data Lifecycle Manager, same Backup=daily tag. The
+# database is covered by RDS automated backups either way (module.data).
+module "ebs_snapshots" {
+  count  = var.enable_aws_backup ? 0 : 1
+  source = "../../../modules/ebs-snapshots"
+
+  name           = local.name
+  retention_days = var.lab_mode ? 7 : 35
 }
 
 # ---- Security services ------------------------------------------------------

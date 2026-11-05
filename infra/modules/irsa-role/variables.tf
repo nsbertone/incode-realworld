@@ -9,7 +9,7 @@ variable "oidc_provider_arn" {
 }
 
 variable "oidc_issuer" {
-  description = "Issuer host/path without https:// (e.g. oidc.eks.eu-central-1.amazonaws.com/id/ABC)."
+  description = "Issuer host/path without https:// (e.g. oidc.eks.us-east-1.amazonaws.com/id/ABC)."
   type        = string
 }
 
