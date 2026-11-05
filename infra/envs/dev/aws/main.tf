@@ -26,6 +26,7 @@ module "eks" {
   admin_principal_arns         = var.admin_principal_arns
   node_instance_types          = var.node_instance_types
   node_capacity_type           = var.node_capacity_type
+  node_desired_size            = var.node_desired_size
   log_retention_days           = var.log_retention_days
 }
 
@@ -105,7 +106,8 @@ module "ebs_snapshots" {
 module "security" {
   source = "../../../modules/security"
 
-  name = local.name
+  name             = local.name
+  enable_inspector = var.enable_inspector
 }
 
 # ---- CI (ECR + GitHub OIDC roles) -------------------------------------------

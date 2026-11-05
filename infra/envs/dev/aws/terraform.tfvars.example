@@ -17,6 +17,11 @@ single_nat_gateway = true
 db_multi_az        = true
 lab_mode           = true
 enable_aws_backup  = false # backup:* denied by the org SCP -> RDS backups + DLM
+enable_inspector   = false # enabled and managed by the organization (EC2, ECR, Lambda)
+
+# The org SCP allows only t2/t3/t3a up to .medium (2 vCPU, 4 GiB)
+node_instance_types = ["t3.medium", "t3a.medium"]
+node_desired_size   = 4
 
 # Optional custom domain (end-to-end TLS):
 # domain_name    = "app.example.com"

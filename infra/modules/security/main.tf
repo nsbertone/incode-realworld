@@ -130,6 +130,17 @@ resource "aws_guardduty_detector_feature" "runtime" {
     name   = "EKS_ADDON_MANAGEMENT"
     status = var.enable_guardduty_runtime_monitoring ? "ENABLED" : "DISABLED"
   }
+
+  # Listed because GuardDuty returns them; no EC2/ECS agents are managed here.
+  additional_configuration {
+    name   = "ECS_FARGATE_AGENT_MANAGEMENT"
+    status = "DISABLED"
+  }
+
+  additional_configuration {
+    name   = "EC2_AGENT_MANAGEMENT"
+    status = "DISABLED"
+  }
 }
 
 # ---- IAM Access Analyzer: flags resources shared outside the account -------

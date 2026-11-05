@@ -139,7 +139,7 @@ jobs:
         component: [backend, frontend]
     env:
       LOCAL_IMAGE: ci/${{ matrix.component }}:${{ github.sha }}
-      PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.AWS_BUILD_ROLE_ARN != '' }}
+      PUSH: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.AWS_BUILD_ROLE_ARN != '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -246,7 +246,7 @@ jobs:
   deploy-dev:
     name: deploy / dev (gitops tag bump)
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.AWS_BUILD_ROLE_ARN != ''
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.AWS_BUILD_ROLE_ARN != ''
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:

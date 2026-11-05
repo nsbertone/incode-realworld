@@ -24,8 +24,9 @@ resource "aws_db_parameter_group" "this" {
   description = "Force TLS, log slow queries, enable pg_stat_statements"
 
   parameter {
-    name  = "rds.force_ssl"
-    value = "1"
+    name         = "rds.force_ssl"
+    value        = "1"
+    apply_method = "pending-reboot" # how RDS reports it; avoids a perpetual diff
   }
 
   parameter {

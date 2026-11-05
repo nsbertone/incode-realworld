@@ -66,6 +66,17 @@ variable "admin_principal_arns" {
   default     = []
 }
 
+variable "node_desired_size" {
+  type    = number
+  default = 3
+}
+
+variable "enable_inspector" {
+  description = "false where the organization already manages Inspector for member accounts (a member cannot change it)."
+  type        = bool
+  default     = true
+}
+
 variable "node_instance_types" {
   type    = list(string)
   default = ["m6i.large", "m5.large"]
