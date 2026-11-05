@@ -2,7 +2,7 @@
 # to main; ArgoCD picks the change up and rolls it out.
 backend:
   image:
-    tag: "0f690ad77d286fafed04fe66c3318d7210657f07"
+    tag: "ab1ab1bb16368d38937fbce01b9b576706e3a8f6"
   replicas: 2
   env:
     DEBUG: "false"
@@ -10,5 +10,5 @@ backend:
     DJANGO_LOG_FORMAT: json
 frontend:
   image:
-    tag: "0f690ad77d286fafed04fe66c3318d7210657f07"
+    tag: "ab1ab1bb16368d38937fbce01b9b576706e3a8f6"
   replicas: 2
