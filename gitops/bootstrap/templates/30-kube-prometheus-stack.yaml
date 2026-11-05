@@ -1,0 +1,61 @@
+# Prometheus + Alertmanager + Grafana (+ node-exporter, kube-state-metrics).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      targetRevision: {{ .Values.charts.kubePrometheusStack }}
+      helm:
+        releaseName: kube-prometheus-stack
+        valueFiles:
+          - $repo/gitops/platform/values/kube-prometheus-stack.yaml
+        valuesObject:
+          alertmanager:
+            serviceAccount:
+              annotations:
+                eks.amazonaws.com/role-arn: {{ .Values.irsa.alertmanager }}
+            config:
+              receivers:
+                - name: "null"
+                - name: sns
+                  sns_configs:
+                    - topic_arn: {{ .Values.observability.alertsTopicArn }}
+                      sigv4:
+                        region: {{ .Values.aws.region }}
+                      subject: '[{{ .Values.environment }}] {{ "{{" }} .CommonLabels.alertname {{ "}}" }}'
+                      send_resolved: true
+          grafana:
+            serviceAccount:
+              annotations:
+                eks.amazonaws.com/role-arn: {{ .Values.irsa.grafana }}
+            additionalDataSources:
+              - name: Loki
+                uid: loki
+                type: loki
+                access: proxy
+                url: http://loki-gateway.monitoring.svc.cluster.local
+                jsonData:
+                  httpHeaderName1: X-Scope-OrgID
+                secureJsonData:
+                  httpHeaderValue1: {{ .Values.environment }}
+              - name: CloudWatch
+                uid: cloudwatch
+                type: cloudwatch
+                jsonData:
+                  authType: default
+                  defaultRegion: {{ .Values.aws.region }}
+    - repoURL: {{ .Values.repoURL }}
+      targetRevision: {{ .Values.targetRevision }}
+      ref: repo
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  {{- include "bootstrap.syncPolicy" . | nindent 2 }}

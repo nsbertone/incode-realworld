@@ -1,0 +1,53 @@
+# Filled in by infra/envs/<env>/argocd (Terraform) through the root
+# Application's helm.valuesObject. Defaults here only document the contract.
+repoURL: ""
+targetRevision: main
+environment: dev
+
+aws:
+  region: ""
+  accountId: ""
+  vpcId: ""
+  vpcCidr: ""
+
+cluster:
+  name: ""
+
+irsa:
+  albController: ""
+  externalSecrets: ""
+  clusterAutoscaler: ""
+  loki: ""
+  grafana: ""
+  alertmanager: ""
+
+targetGroups:
+  frontend: ""
+  backend: ""
+
+data:
+  dbHost: ""
+  dbPort: 5432
+  dbName: ""
+  dbMasterSecretArn: ""
+  appSecretName: ""
+
+observability:
+  lokiBucket: ""
+  alertsTopicArn: ""
+
+images:
+  backend: ""
+  frontend: ""
+
+appUrl: ""
+
+# Pinned upstream chart versions (bump via PR; Renovate/Dependabot can do it).
+charts:
+  awsLoadBalancerController: 3.6.2
+  externalSecrets: 2.14.0
+  clusterAutoscaler: 9.59.0
+  metricsServer: 3.14.0
+  kubePrometheusStack: 92.16.1
+  loki: 7.5.0
+  alloy: 1.15.0

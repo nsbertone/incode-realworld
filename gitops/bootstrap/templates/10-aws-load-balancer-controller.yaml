@@ -1,0 +1,31 @@
+# Only used for TargetGroupBinding: registers pod IPs into the Terraform-owned
+# target groups. It does not create load balancers in this design.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: aws-load-balancer-controller
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-20"
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  source:
+    repoURL: https://aws.github.io/eks-charts
+    chart: aws-load-balancer-controller
+    targetRevision: {{ .Values.charts.awsLoadBalancerController }}
+    helm:
+      valuesObject:
+        clusterName: {{ .Values.cluster.name }}
+        region: {{ .Values.aws.region }}
+        vpcId: {{ .Values.aws.vpcId }}
+        replicaCount: 2
+        enableServiceMutatorWebhook: false
+        serviceAccount:
+          name: aws-load-balancer-controller
+          annotations:
+            eks.amazonaws.com/role-arn: {{ .Values.irsa.albController }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  {{- include "bootstrap.syncPolicy" . | nindent 2 }}

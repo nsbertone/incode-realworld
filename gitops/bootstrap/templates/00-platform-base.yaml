@@ -1,0 +1,18 @@
+# Namespaces (with Pod Security labels) and the default StorageClass.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-base
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-30"
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  source:
+    repoURL: {{ .Values.repoURL }}
+    targetRevision: {{ .Values.targetRevision }}
+    path: gitops/platform/base
+  destination:
+    server: https://kubernetes.default.svc
+  {{- include "bootstrap.syncPolicy" . | nindent 2 }}

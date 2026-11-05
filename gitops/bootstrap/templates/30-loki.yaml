@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: loki
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: loki
+      targetRevision: {{ .Values.charts.loki }}
+      helm:
+        releaseName: loki
+        valueFiles:
+          - $repo/gitops/platform/values/loki.yaml
+        valuesObject:
+          serviceAccount:
+            name: loki
+            annotations:
+              eks.amazonaws.com/role-arn: {{ .Values.irsa.loki }}
+          loki:
+            storage:
+              bucketNames:
+                chunks: {{ .Values.observability.lokiBucket }}
+                ruler: {{ .Values.observability.lokiBucket }}
+              s3:
+                region: {{ .Values.aws.region }}
+    - repoURL: {{ .Values.repoURL }}
+      targetRevision: {{ .Values.targetRevision }}
+      ref: repo
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  {{- include "bootstrap.syncPolicy" . | nindent 2 }}

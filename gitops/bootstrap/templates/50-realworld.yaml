@@ -1,0 +1,37 @@
+# The application. CI bumps the image tags in gitops/envs/<env>/values.yaml.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: realworld
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  source:
+    repoURL: {{ .Values.repoURL }}
+    targetRevision: {{ .Values.targetRevision }}
+    path: gitops/charts/realworld
+    helm:
+      valueFiles:
+        - ../../envs/{{ .Values.environment }}/values.yaml
+      valuesObject:
+        aws:
+          vpcCidr: {{ .Values.aws.vpcCidr }}
+        targetGroups:
+          frontend: {{ .Values.targetGroups.frontend }}
+          backend: {{ .Values.targetGroups.backend }}
+        data:
+          {{- toYaml .Values.data | nindent 10 }}
+        backend:
+          image:
+            repository: {{ .Values.images.backend }}
+        frontend:
+          image:
+            repository: {{ .Values.images.frontend }}
+        appUrl: {{ .Values.appUrl }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: realworld
+  {{- include "bootstrap.syncPolicy" . | nindent 2 }}

@@ -1,0 +1,15 @@
+# dev environment. CI updates the image tags below (git SHA) on every merge
+# to main; ArgoCD picks the change up and rolls it out.
+backend:
+  image:
+    tag: "bootstrap"
+  replicas: 2
+  env:
+    DEBUG: "false"
+    ALLOWED_HOSTS: "*"     # behind CloudFront + ALB header check; tighten to the app host
+    DJANGO_LOG_FORMAT: json
+
+frontend:
+  image:
+    tag: "bootstrap"
+  replicas: 2

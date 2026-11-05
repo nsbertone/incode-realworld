@@ -1,0 +1,16 @@
+# Default StorageClass: encrypted gp3. Every volume is tagged Backup=daily so
+# the AWS Backup plan (tag selection) snapshots it every night.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp3
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: ebs.csi.aws.com
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+parameters:
+  type: gp3
+  encrypted: "true"
+  tagSpecification_1: "Backup=daily"

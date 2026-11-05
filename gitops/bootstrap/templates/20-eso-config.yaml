@@ -1,0 +1,22 @@
+# ClusterSecretStore -> AWS Secrets Manager (needs the ESO CRDs from wave -20).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: eso-config
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  source:
+    repoURL: {{ .Values.repoURL }}
+    targetRevision: {{ .Values.targetRevision }}
+    path: gitops/platform/eso-config
+    helm:
+      valuesObject:
+        region: {{ .Values.aws.region }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: external-secrets
+  {{- include "bootstrap.syncPolicy" . | nindent 2 }}

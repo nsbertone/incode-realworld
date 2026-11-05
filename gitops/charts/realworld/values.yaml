@@ -1,0 +1,57 @@
+# Environment-specific values: gitops/envs/<env>/values.yaml
+# Infra values (target groups, secrets, CIDR): injected by the bootstrap app.
+
+appUrl: ""
+
+aws:
+  vpcCidr: ""
+
+targetGroups:
+  frontend: ""
+  backend: ""
+
+data:
+  dbHost: ""
+  dbPort: 5432
+  dbName: conduit
+  dbMasterSecretArn: ""
+  appSecretName: ""
+
+backend:
+  image:
+    repository: ""
+    tag: ""            # git SHA, set by CI
+  port: 8000
+  replicas: 2
+  # Readiness touches the DB (pod leaves the ALB if it cannot reach Postgres);
+  # liveness does not (a DB blip must not restart every pod).
+  readinessPath: /api/tags
+  livenessPath: /healthz
+  migrateCommand: ["python", "manage.py", "migrate", "--noinput"]
+  env: {}
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 512Mi }
+  autoscaling:
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  metrics:
+    enabled: false     # ServiceMonitor once the app exposes /metrics
+    path: /metrics
+
+frontend:
+  image:
+    repository: ""
+    tag: ""
+  port: 8080
+  replicas: 2
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { memory: 128Mi }
+  autoscaling:
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+
+secretRefreshInterval: 1h
