@@ -15,6 +15,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:0000@db:5432/postgres
       - ALLOWED_HOSTS=*
+      - DEBUG=true
 
   db:
     image: postgres:18

@@ -10,7 +10,7 @@ import sys
 from datetime import timedelta
 from os import getenv
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,9 +21,15 @@ sys.path.insert(0, str(BASE_DIR / "apps"))  # Also allow direct loading of the c
 # SECURITY WARNING: Unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-2jr-1j1%i(%pqej_8_ujp9l2n1vl%^i9y390o^n&nj_(z8!+ke"
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = str(getenv("DEBUG", False)).lower() == "true"
+# Deployment: injected from AWS Secrets Manager (External Secrets). The insecure
+# fallback is only allowed for local DEBUG runs and tests.
+SECRET_KEY = getenv("DJANGO_SECRET_KEY", "")
+if not SECRET_KEY:
+    if not DEBUG:
+        raise SystemExit("DJANGO_SECRET_KEY must be set when DEBUG is off")
+    SECRET_KEY = "django-insecure-local-only"
 ALLOWED_HOSTS = ["*"] if DEBUG else (lambda s: s.split(";") if s else [])(getenv("ALLOWED_HOSTS", ""))
 CORS_ORIGIN_ALLOW_ALL = True
 
@@ -91,6 +97,8 @@ if DATABASE_URL and DATABASE_URL.startswith((":memory:", "file:")):
     DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": DATABASE_URL}}
 elif DATABASE_URL:
     PARSED_DATABASE_URL = urlparse(DATABASE_URL)
+    # Query string options (e.g. ?sslmode=require) are passed to psycopg.
+    DATABASE_OPTIONS = {k: v[-1] for k, v in parse_qs(PARSED_DATABASE_URL.query).items()}
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
@@ -99,6 +107,10 @@ elif DATABASE_URL:
             "PASSWORD": PARSED_DATABASE_URL.password,
             "HOST": PARSED_DATABASE_URL.hostname,
             "PORT": PARSED_DATABASE_URL.port,
+            "OPTIONS": DATABASE_OPTIONS,
+            # Reuse connections across requests, verify them before reuse.
+            "CONN_MAX_AGE": int(getenv("DB_CONN_MAX_AGE", "60")),
+            "CONN_HEALTH_CHECKS": True,
         }
     }
 elif DEBUG:
@@ -152,4 +164,23 @@ AUTH_USER_MODEL = "accounts.User"
 JWT_NINJA = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=7),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+}
+
+
+# Logging: everything to stdout (collected by Alloy into Loki). One JSON object
+# per line when DJANGO_LOG_FORMAT=json, so Loki can filter on level/logger.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {"()": "config.logging.JsonFormatter"},
+        "plain": {"format": "%(asctime)s %(levelname)s %(name)s %(message)s"},
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "json" if getenv("DJANGO_LOG_FORMAT") == "json" else "plain",
+        },
+    },
+    "root": {"handlers": ["console"], "level": getenv("LOG_LEVEL", "INFO")},
 }

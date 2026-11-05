@@ -77,7 +77,15 @@ api.add_router(f"/{api_prefix}", "articles.api.router")
 api.add_router(f"/{api_prefix}", "comments.api.router")
 api.add_router("/auth", "jwt_ninja.api.router")
 
+
+def healthz(request: HttpRequest) -> HttpResponse:
+    """Liveness: the process answers. No DB call, so a database blip does not
+    make Kubernetes restart every pod (readiness uses /api/tags, which does)."""
+    return HttpResponse("ok", content_type="text/plain")
+
+
 urlpatterns = [
+    path("healthz", healthz),
     path("admin/", admin.site.urls),
     path("", api.urls),
 ]
