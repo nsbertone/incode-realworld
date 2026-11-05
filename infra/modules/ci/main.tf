@@ -1,5 +1,13 @@
 data "aws_caller_identity" "current" {}
 
+locals {
+  # GitHub OIDC `sub` prefix. Repositories with immutable subjects send
+  # repo:<owner>@<owner_id>/<repo>@<repo_id> (a renamed or re-created repo with
+  # the same name cannot match); older ones send repo:<owner>/<repo>.
+  # `gh api repos/<owner>/<repo>/actions/oidc/customization/sub` shows which.
+  sub_prefix = coalesce(var.github_sub_prefix, "repo:${var.github_repo}")
+}
+
 # ---- ECR -------------------------------------------------------------------
 resource "aws_ecr_repository" "this" {
   for_each = var.repositories
@@ -54,7 +62,7 @@ data "aws_iam_policy_document" "build_trust" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repo}:ref:refs/heads/${var.build_branch}"]
+      values   = ["${local.sub_prefix}:ref:refs/heads/${var.build_branch}"]
     }
   }
 }
@@ -110,8 +118,8 @@ data "aws_iam_policy_document" "plan_trust" {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
       values = [
-        "repo:${var.github_repo}:pull_request",
-        "repo:${var.github_repo}:ref:refs/heads/${var.build_branch}",
+        "${local.sub_prefix}:pull_request",
+        "${local.sub_prefix}:ref:refs/heads/${var.build_branch}",
       ]
     }
   }

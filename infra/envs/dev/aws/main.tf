@@ -116,6 +116,7 @@ module "ci" {
 
   name                     = local.name
   github_repo              = var.github_repo
+  github_sub_prefix        = var.github_sub_prefix
   github_oidc_provider_arn = var.github_oidc_provider_arn
   tfstate_bucket           = var.tfstate_bucket
   secrets_prefix           = "${local.name}/"

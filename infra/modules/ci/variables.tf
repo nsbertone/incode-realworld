@@ -13,6 +13,12 @@ variable "github_repo" {
   type        = string
 }
 
+variable "github_sub_prefix" {
+  description = "OIDC sub prefix, e.g. repo:owner@123/repo@456 for immutable subjects. null = repo:<github_repo>."
+  type        = string
+  default     = null
+}
+
 variable "github_oidc_provider_arn" {
   type = string
 }

@@ -8,6 +8,8 @@ vpc_cidr    = "10.60.0.0/16"
 admin_cidrs = ["203.0.113.10/32"]
 
 github_repo              = "nsbertone/incode-realworld"
+# GitHub sends immutable OIDC subjects for this repo (owner and repo IDs)
+github_sub_prefix        = "repo:nsbertone@213944955/incode-realworld@1447323414"
 github_oidc_provider_arn = "arn:aws:iam::780601577639:oidc-provider/token.actions.githubusercontent.com"
 tfstate_bucket           = "realworld-tfstate-780601577639"
 alert_email              = "you@example.com"

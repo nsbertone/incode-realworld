@@ -118,6 +118,12 @@ variable "github_repo" {
   type        = string
 }
 
+variable "github_sub_prefix" {
+  description = "OIDC sub prefix when GitHub sends immutable subjects (repo:owner@id/repo@id)."
+  type        = string
+  default     = null
+}
+
 variable "github_oidc_provider_arn" {
   description = "From infra/global output."
   type        = string
