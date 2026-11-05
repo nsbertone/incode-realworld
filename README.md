@@ -31,7 +31,7 @@ gitops/
   platform/              what ArgoCD installs besides the app (values + manifests)
   charts/realworld/      Helm chart for the app
   envs/dev/values.yaml   per-environment app values; CI bumps image tags here
-loadtest/                k6 performance regression test                   TODO
+loadtest/                k6 load test + p95 regression check against main
 .github/workflows/       CI (tests, scans, build, deploy), CodeQL, Terraform checks/plan
 docs/                    architecture diagram                             TODO
 ```
@@ -127,6 +127,9 @@ PR / push ──► backend: ruff + 92 unit tests on PostgreSQL
           build images ──► trivy image (fail on fixable HIGH/CRITICAL)
                        └─► official RealWorld API spec (Hurl, 157 requests)
                            against the built backend image + PostgreSQL
+                       └─► k6 load test (backend): absolute p95 / error thresholds,
+                           and p95 per endpoint vs the last green run on main
+                           (fails above 1.5x: performance regression detection)
                 │ main only
                 ▼
           push to ECR (OIDC role, tag = git SHA, immutable)

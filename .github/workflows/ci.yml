@@ -132,6 +132,7 @@ jobs:
     permissions:
       contents: read
       id-token: write # OIDC -> AWS role, no stored AWS keys
+      actions: read   # download the perf baseline artifact from main
     strategy:
       fail-fast: true
       matrix:
@@ -178,6 +179,39 @@ jobs:
       - name: API spec tests (hurl)
         if: matrix.component == 'backend'
         run: .github/scripts/api-tests.sh "$LOCAL_IMAGE" .realworld/specs/api
+      # Bonus: performance regression detection. k6 load test against the
+      # same image, p95 per endpoint compared with the last green run on main.
+      - name: Load test (k6)
+        if: matrix.component == 'backend'
+        run: .github/scripts/perf-test.sh "$LOCAL_IMAGE" "$RUNNER_TEMP/perf-summary.json"
+      - name: Download perf baseline (last successful main run)
+        if: matrix.component == 'backend'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          run_id=$(gh run list -R "$GITHUB_REPOSITORY" --workflow ci.yml --branch main \
+                     --status success --limit 1 --json databaseId -q '.[0].databaseId')
+          if [ -n "$run_id" ] && gh run download "$run_id" -R "$GITHUB_REPOSITORY" \
+               -n perf-summary -D "$RUNNER_TEMP/baseline"; then
+            echo "baseline from run $run_id"
+          else
+            echo "no baseline yet (first run on main): regression check skipped"
+          fi
+      - name: Compare with baseline
+        if: matrix.component == 'backend'
+        run: |
+          base="$RUNNER_TEMP/baseline/perf-summary.json"
+          [ -f "$base" ] || exit 0
+          python3 loadtest/compare.py "$base" "$RUNNER_TEMP/perf-summary.json" 1.5 \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Keep perf summary (next runs compare against it)
+        if: matrix.component == 'backend'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: perf-summary
+          path: ${{ runner.temp }}/perf-summary.json
+          retention-days: 30
+
       - name: Backend logs (on failure)
         if: failure() && matrix.component == 'backend'
         run: tail -n 200 "$RUNNER_TEMP/backend.log" || true
