@@ -106,6 +106,10 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: {{ $name }}
+  annotations:
+    # After the Deployment (wave 1): on a first deploy an HPA whose target
+    # does not exist yet is Degraded and would fail the whole sync.
+    argocd.argoproj.io/sync-wave: "2"
   labels: {{- include "rw.labels" . | nindent 4 }}
 spec:
   scaleTargetRef:
