@@ -1,0 +1,22 @@
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+*.auto.tfvars
+terraform.tfvars
+!terraform.tfvars.example
+.terraform.tfstate.lock.info
+# Local
+.env
+*.pem
+.DS_Store
+.idea/
+.vscode/
+node_modules/
+__pycache__/
+.ruff_cache/
+.angular/
+dist/
