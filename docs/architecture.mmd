@@ -1,0 +1,62 @@
+flowchart LR
+  user([User browser])
+
+  subgraph gh["GitHub"]
+    gha["GitHub Actions<br/>unit + API spec tests, k6,<br/>gitleaks, CodeQL, Trivy, build"]
+    repo[("Git repo<br/>app, infra, gitops")]
+  end
+
+  subgraph aws["AWS account, us-east-1"]
+    subgraph edge["EDGE tier"]
+      waf["WAF<br/>managed rules,<br/>rate limits"]
+      cf["CloudFront<br/>HTTPS, static cache"]
+    end
+
+    subgraph vpc["VPC 10.60.0.0/16, 3 AZs"]
+      subgraph pub["public subnets"]
+        alb["ALB<br/>only CloudFront<br/>+ secret header"]
+        nat["NAT gateway"]
+      end
+
+      subgraph priv["APP tier: private subnets, EKS"]
+        subgraph app["namespace realworld"]
+          fe["frontend pods<br/>nginx + Angular"]
+          be["backend pods<br/>Django Ninja"]
+        end
+        subgraph platform["platform (ArgoCD)"]
+          argo["ArgoCD"]
+          ctl["LB controller,<br/>External Secrets,<br/>Cluster Autoscaler"]
+          obs["Prometheus, Alertmanager,<br/>Grafana, Loki, Alloy"]
+        end
+      end
+
+      subgraph dbs["DATA tier: DB subnets"]
+        rds[("RDS PostgreSQL<br/>Multi-AZ, TLS only,<br/>no internet route")]
+      end
+    end
+
+    subgraph svc["AWS services (IRSA, OIDC)"]
+      ecr[("ECR")]
+      sm["Secrets Manager"]
+      s3["S3: Loki logs, ALB logs"]
+      cw["CloudWatch: EKS, RDS,<br/>VPC flow, WAF logs"]
+      sns["SNS: alert email"]
+      sec["CloudTrail, GuardDuty,<br/>Inspector, Access Analyzer"]
+      bak["Backups: RDS PITR,<br/>DLM EBS snapshots"]
+    end
+  end
+
+  user -->|HTTPS| cf
+  waf -.- cf
+  cf -->|"/api/* and /*"| alb
+  alb -->|"target groups = pod IPs"| fe
+  alb --> be
+  be -->|"5432 TLS"| rds
+
+  gha -->|"push image, OIDC"| ecr
+  gha -->|"commit image tag"| repo
+  argo -->|"pull desired state"| repo
+  argo -->|sync| app
+  ctl --> sm
+  obs --> s3
+  obs --> sns
